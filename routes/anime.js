@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth } = require("../middleware");
+const { requireAuth, createError } = require("../middleware");
 const router = express.Router();
 
 // Data awal (disimpan di memori, tanpa database)
@@ -44,27 +44,108 @@ let anime = [
     rating: 8.5,
     status: "completed",
   },
+  {
+    id: 6,
+    title: "Toradora!",
+    genre: "Romance",
+    episodes: 25,
+    rating: 8.1,
+    status: "completed",
+  },
+  {
+    id: 7,
+    title: "Frieren: Beyond Journey's End",
+    genre: "Fantasy",
+    episodes: 28,
+    rating: 9.3,
+    status: "completed",
+  },
+  {
+    id: 8,
+    title: "Haikyuu!!",
+    genre: "Sports",
+    episodes: 25,
+    rating: 8.4,
+    status: "completed",
+  },
+  {
+    id: 9,
+    title: "Another",
+    genre: "Horror",
+    episodes: 12,
+    rating: 7.5,
+    status: "completed",
+  },
+  {
+    id: 10,
+    title: "Monster",
+    genre: "Mystery",
+    episodes: 74,
+    rating: 8.9,
+    status: "completed",
+  },
+  {
+    id: 11,
+    title: "Violet Evergarden",
+    genre: "Drama",
+    episodes: 13,
+    rating: 8.5,
+    status: "completed",
+  },
+  {
+    id: 12,
+    title: "Barakamon",
+    genre: "Slice of Life",
+    episodes: 12,
+    rating: 8.1,
+    status: "completed",
+  },
+  {
+    id: 13,
+    title: "Code Geass",
+    genre: "Mecha",
+    episodes: 25,
+    rating: 8.7,
+    status: "completed",
+  },
+  {
+    id: 14,
+    title: "Your Lie in April",
+    genre: "Music",
+    episodes: 22,
+    rating: 8.6,
+    status: "completed",
+  },
+  {
+    id: 15,
+    title: "One Piece",
+    genre: "Adventure",
+    episodes: 1100,
+    rating: 8.7,
+    status: "ongoing",
+  },
 ];
 
-let nextId = 6;
+let nextId = 16; // karena data awal sudah sampai id 15
 
+// Cari index anime berdasarkan id, lempar 404 kalau tidak ada
 function findIndexOr404(id) {
   const index = anime.findIndex((a) => a.id === Number(id));
   if (index === -1) {
-    const err = new Error("Anime not found");
-    err.status = 404;
-    throw err;
+    throw createError(404, "Anime not found");
   }
   return index;
 }
 
-function validate({ title, genre, episodes, rating, status } = {}) {
+// Validasi body: lempar error 400 kalau tidak valid
+function validate(body = {}) {
+  const { title, genre, episodes, rating, status } = body;
+
   if (!title || !genre || !status) {
-    return "title, genre, and status are required";
+    throw createError(400, "title, genre, and status are required");
   } else if (typeof episodes !== "number" || typeof rating !== "number") {
-    return "episodes and rating must be numbers";
+    throw createError(400, "episodes and rating must be numbers");
   }
-  return null;
 }
 
 // /anime
@@ -74,8 +155,7 @@ router
     res.json(anime);
   })
   .post((req, res) => {
-    const error = validate(req.body);
-    if (error) return res.status(400).json({ error });
+    validate(req.body);
 
     const { title, genre, episodes, rating, status } = req.body;
     const newAnime = { id: nextId++, title, genre, episodes, rating, status };
@@ -84,7 +164,21 @@ router
     res.status(201).json(newAnime);
   });
 
-// GET /anime/genre atau /anime/genre/Action
+// GET /anime/search?title=death (harus sebelum /:id)
+router.get("/search", (req, res) => {
+  const { title } = req.query;
+
+  if (typeof title !== "string" || !title) {
+    throw createError(400, "query 'title' is required");
+  }
+
+  const result = anime.filter((a) =>
+    a.title.toLowerCase().includes(title.toLowerCase()),
+  );
+  res.json(result);
+});
+
+// GET /anime/genre atau /anime/genre/Action (harus sebelum /:id)
 router.get("/genre{/:name}", (req, res) => {
   const { name } = req.params;
 
@@ -107,13 +201,11 @@ router
   })
   .put(async (req, res) => {
     const index = findIndexOr404(req.params.id);
-
-    const error = validate(req.body);
-    if (error) return res.status(400).json({ error });
+    validate(req.body);
 
     const { title, genre, episodes, rating, status } = req.body;
     anime[index] = {
-      id: anime[index].id,
+      id: anime[index].id, // id tetap, tidak bisa diubah
       title,
       genre,
       episodes,
