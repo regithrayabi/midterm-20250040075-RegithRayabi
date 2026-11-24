@@ -138,7 +138,51 @@ Semua error (400, 401, 404, 500) memakai format yang sama dan melewati satu erro
 logger -> express.json() -> routes -> notFound -> errorHandler
 ```
 
-Error handler memakai 4 parameter dan ditaruh paling akhir, supaya bisa menangkap error dari semua middleware dan route di atasnya.
+| Urutan | Middleware / handler | Alasan                                                                             |
+| ------ | -------------------- | ---------------------------------------------------------------------------------- |
+| 1      | `logger`             | Paling atas supaya semua request tercatat, termasuk yang gagal                     |
+| 2      | `express.json()`     | Harus sebelum route, karena route membutuhkan `req.body` yang sudah terbaca        |
+| 3      | Routes               | Mencocokkan URL dan method. Express memproses dari atas ke bawah                   |
+| 4      | `notFound`           | Setelah semua route: kalau request sampai sini, berarti tidak ada route yang cocok |
+| 5      | `errorHandler`       | Paling akhir dengan 4 parameter, menangkap error dari semua yang ada di atasnya    |
+
+Route spesifik (`/anime/genre{/:name}` dan `/anime/search`) ditulis sebelum `/anime/:id`, supaya kata "genre" dan "search" tidak dianggap sebagai nilai `:id`.
+
+## Panduan demo
+
+Mengikuti 4 langkah demo pada dokumen tugas. Sebelum mulai, ketik `rs` di terminal nodemon supaya data kembali ke kondisi awal (15 anime, id berikutnya 16).
+
+### 1. Jalankan project
+
+```bash
+npm install
+npm run dev
+```
+
+Server menyala di `http://localhost:6767` dan mencetak `Server running on http://localhost:6767`.
+
+### 2. Tunjukkan CRUD
+
+| Aksi      | Request                            | Hasil                          |
+| --------- | ---------------------------------- | ------------------------------ |
+| GET list  | `GET /anime`                       | 200, 15 anime                  |
+| GET by id | `GET /anime/2`                     | 200, Death Note                |
+| POST      | `POST /anime` + body lengkap       | 201, `id` dibuat server (16)   |
+| PUT       | `PUT /anime/1` + body lengkap      | 200, `id` tetap, field berubah |
+| DELETE    | `DELETE /anime/2` + `x-auth-token` | 200, data terhapus             |
+
+### 3. Tunjukkan tiga error
+
+| Error | Request                        | Hasil                                                                  |
+| ----- | ------------------------------ | ---------------------------------------------------------------------- |
+| 400   | `POST /anime` + `{}`           | `{ "status": 400, "error": "title, genre, and status are required" }`  |
+| 401   | `DELETE /anime/3` tanpa header | `{ "status": 401, "error": "Unauthorized: missing or invalid token" }` |
+| 404   | `GET /anime/99`                | `{ "status": 404, "error": "Anime not found" }`                        |
+| 404   | `GET /halaman-ngawur`          | `{ "status": 404, "error": "Route GET /halaman-ngawur not found" }`    |
+
+### 4. Jelaskan urutan di `index.js`
+
+Lihat bagian **Urutan di `index.js`** di atas.
 
 ## Struktur folder
 
