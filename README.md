@@ -5,6 +5,7 @@ Midterm Project: Build a REST API with ExpressJS
 - **Nama:** Regith Rayabi
 - **NIM:** 20250040075
 - **Tema:** Anime List
+- **Demo:** https://youtu.be/zGXpclRdjFI
 
 ## Deskripsi
 
